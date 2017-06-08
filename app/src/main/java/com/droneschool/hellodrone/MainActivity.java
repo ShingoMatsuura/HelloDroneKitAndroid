@@ -1,7 +1,15 @@
 package com.droneschool.hellodrone;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
+import android.provider.Settings;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -81,6 +89,38 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     @Override
     public void  onStart() {
         super.onStart();
+
+        //==========================================================================================
+
+        // 権限設定を行う
+        // 権限がない場合、UDP接続ができない
+
+        //request permissions
+        int CODE_WRITE_SETTINGS_PERMISSION = 6789;
+        boolean permission;
+
+        // Android 6.0以降の場合
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            permission = Settings.System.canWrite(this);
+        } else {
+            permission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED;
+        }
+        if (permission) {
+            // 権限あり
+        } else {
+            // 権限なし
+
+            // 権限設定表示
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                intent.setData(Uri.parse("package:" + this.getPackageName()));
+                this.startActivityForResult(intent, CODE_WRITE_SETTINGS_PERMISSION);
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_SETTINGS}, CODE_WRITE_SETTINGS_PERMISSION);
+            }
+        }
+
+        //==========================================================================================
 
         // Activity開始時に3DR Servicesと接続する
         this.controlTower.connect(this);
@@ -244,13 +284,13 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             this.drone.disconnect();
         } else {
             // UDP
-            //ConnectionParameter connectionParams = ConnectionParameter.newUdpConnection(null);
+            ConnectionParameter connectionParams = ConnectionParameter.newUdpConnection(null);
 
             // TCP
             //ConnectionParameter connectionParams = ConnectionParameter.newTcpConnection("10.1.1.10", null);
 
             // USB
-            ConnectionParameter connectionParams = ConnectionParameter.newUsbConnection(57600, null);
+            //ConnectionParameter connectionParams = ConnectionParameter.newUsbConnection(57600, null);
 
             this.drone.connect(connectionParams);
         }
