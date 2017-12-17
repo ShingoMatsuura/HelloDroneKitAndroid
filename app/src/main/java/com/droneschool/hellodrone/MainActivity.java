@@ -13,14 +13,15 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.apis.ControlApi;
@@ -30,7 +31,6 @@ import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
-import com.o3dr.services.android.lib.drone.connection.ConnectionType;
 import com.o3dr.services.android.lib.drone.property.Altitude;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.Type;
@@ -38,7 +38,7 @@ import com.o3dr.services.android.lib.drone.property.VehicleMode;
 import com.o3dr.services.android.lib.model.AbstractCommandListener;
 import com.o3dr.services.android.lib.model.SimpleCommandListener;
 
-
+import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements DroneListener, TowerListener {
@@ -57,6 +57,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     // フライトモード用リスト
     private Spinner modeSelector;
+    // デバッグ表示テキストフィールド
+    private EditText debug;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,6 +86,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 // Do nothing
             }
         });
+        debug = (EditText) findViewById(R.id.debug);
+        InputMethodManager imm = (InputMethodManager)
+        getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(
+                debug.getWindowToken(), 0);
     }
 
     @Override
@@ -172,6 +179,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     @Override
     public void onDroneEvent(String event, Bundle extras) {
+        debug(event, extras);
         switch (event) {
             // Droneとの接続完了時
             case AttributeEvent.STATE_CONNECTED:
@@ -271,6 +279,19 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         TextView altitudeTextView = (TextView) findViewById(R.id.altitudeValueTextView);
         Altitude droneAltitude = this.drone.getAttribute(AttributeType.ALTITUDE);
         altitudeTextView.setText(String.format("%3.1f", droneAltitude.getAltitude()) + "m");
+    }
+
+    // デバッグ表示
+    protected void debug(String msg, Bundle extras) {
+        String forDebug = "Event: " + msg + "\n";
+        if (extras != null) {
+            Iterator<String> keys = extras.keySet().iterator();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                forDebug += ("  " + key + "> " + extras.get(key) + "\n");
+            }
+        }
+        debug.append(forDebug+"\n");
     }
 
     //==============================================================================================
